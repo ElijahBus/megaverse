@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: megaverse
+
+candidate:
+  id: 0abb06bc-1c88-4c7e-b2cc-4b8ab81e3112
