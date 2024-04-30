@@ -31,16 +31,15 @@ class XLogoService(@Value("\${candidate.id}") private val candidateId: String) {
     val comethsURL: String = "/comeths"
 
     @Async
-    fun runMap(): Future<String> {
-        val completableFuture = CompletableFuture<String>()
+    fun runMap(): CompletableFuture<Void>? {
 
         val goalMap: Map<String, Any> = this.getGoalMap();
 
         // goal = array [ [ " " ] ]
         val placements = (goalMap["goal"] as JsonArray);
 
-        placements.chunked(20).stream().forEachOrdered { chunk ->
-            chunk.forEachIndexed rowLoop@{ row, placement ->
+        val completableFuture = CompletableFuture.supplyAsync {
+            placements.forEachIndexed rowLoop@{ row, placement ->
                 run {
                     (placement.jsonArray).forEachIndexed columnLoop@{ column, element ->
                         run {
@@ -50,6 +49,7 @@ class XLogoService(@Value("\${candidate.id}") private val candidateId: String) {
                             if (!isValidAstralElement(element.toString())) return@columnLoop
 
                             if (element.toString().contains("COMETH")) {
+                                logger.info("Sending a new $element")
                                 xlogoRestClient.buildRequest(
                                     HttpMethod.POST,
                                     comethsURL,
@@ -58,6 +58,7 @@ class XLogoService(@Value("\${candidate.id}") private val candidateId: String) {
                             }
 
                             if (element.toString().contains("SOLOON")) {
+                                logger.info("Sending a new $element")
                                 xlogoRestClient.buildRequest(
                                     HttpMethod.POST,
                                     soloonsURL,
@@ -66,6 +67,7 @@ class XLogoService(@Value("\${candidate.id}") private val candidateId: String) {
                             }
 
                             if (element.toString().contains("POLYANET")) {
+                                logger.info("Sending a new $element")
                                 xlogoRestClient.buildRequest(
                                     HttpMethod.POST,
                                     polyanetsURL,
@@ -76,11 +78,11 @@ class XLogoService(@Value("\${candidate.id}") private val candidateId: String) {
                     }
                 }
             }
-        }
 
-        completableFuture.complete("Finished plotting astral object on the map !");
+            return@supplyAsync "Finished plotting astral objects on the map"
+        }.thenAcceptAsync { response -> logger.info(response) } // Notify the client on the status that the process has completed
 
-        return completableFuture
+        return completableFuture;
     }
 
     /**
@@ -103,15 +105,15 @@ class XLogoService(@Value("\${candidate.id}") private val candidateId: String) {
         val excludedElement = "SPACE";
 
         val validElements: List<String> = listOf(
-            "POLYANET",
-            "RIGHT_COMETH",
-            "LEFT_COMETH",
-            "UP_COMETH",
-            "DOWN_COMETH",
-            "WHITE_SOLOON",
-            "BLUE_SOLOON",
-            "RED_SOLOON",
-            "PURPLE_SOLOON",
+            "\"POLYANET\"",
+            "\"RIGHT_COMETH\"",
+            "\"LEFT_COMETH\"",
+            "\"UP_COMETH\"",
+            "\"DOWN_COMETH\"",
+            "\"WHITE_SOLOON\"",
+            "\"BLUE_SOLOON\"",
+            "\"RED_SOLOON\"",
+            "\"PURPLE_SOLOON\"",
         )
 
         return validElements.contains(element) && element != excludedElement;

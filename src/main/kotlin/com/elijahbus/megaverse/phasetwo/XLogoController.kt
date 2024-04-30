@@ -12,17 +12,12 @@ class XLogoController(val xLogoService: XLogoService) {
 
     @GetMapping
     fun plotAstralObject(): String {
-        val execution = xLogoService.runMap();
+        val execution = xLogoService.runMap()
 
-        return if (!execution.isDone) {
-            "Processing..."
-        } else if (execution.isCancelled) {
-            "The Process has been cancelled."
-        } else if (execution.isDone) {
-            // Communicate to the client and inform when the process is done ...
-            execution.get()
+        return if (!execution?.isDone!!) {
+            "Processing"
         } else {
-            "You might need to retry..."
+            ""
         }
 
     }
