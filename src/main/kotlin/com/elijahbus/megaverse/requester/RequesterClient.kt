@@ -9,9 +9,9 @@ interface RequesterClient {
 
     val rollbackOnFailure: Boolean
 
-    val shouldRetry: Boolean;
+    val shouldRetry: Boolean
 
-    fun buildRequest(method: HttpMethod, uri: String, body: AstralObject?): Any
+    suspend fun buildRequest(method: HttpMethod, uri: String, body: AstralObject?): Any
 
     fun rollback(uri: String, body: AstralObject?): Any
 }

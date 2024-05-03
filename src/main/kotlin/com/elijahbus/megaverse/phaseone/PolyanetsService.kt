@@ -2,9 +2,7 @@ package com.elijahbus.megaverse.phaseone
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpMethod
-import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
-import org.springframework.web.client.RestClient
 
 @Service
 class PolyanetsService(@Value("\${candidate.id}") private val candidateId: String) {
@@ -29,7 +27,7 @@ class PolyanetsService(@Value("\${candidate.id}") private val candidateId: Strin
         8 to 2
     )
 
-    fun plot(): Any? {
+    suspend fun plot(): Any? {
         axis1.forEach { poly ->
             polyanetsRestClient.buildRequest(HttpMethod.POST, "/polyanets", Polyanet(poly.key, poly.value, candidateId))
         }
@@ -41,7 +39,7 @@ class PolyanetsService(@Value("\${candidate.id}") private val candidateId: Strin
         return "OK"
     }
 
-    fun delete(): Any? {
+    suspend fun delete(): Any? {
         axis1.forEach { poly ->
             polyanetsRestClient.buildRequest(
                 HttpMethod.DELETE,

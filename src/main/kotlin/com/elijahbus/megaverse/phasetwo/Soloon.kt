@@ -6,5 +6,4 @@ data class Soloon(
     override val row: Int,
     override val column: Int,
     val color: String,
-    val candidateId: String
 ) : AstralObject

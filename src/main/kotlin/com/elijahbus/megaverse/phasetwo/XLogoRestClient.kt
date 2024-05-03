@@ -10,16 +10,20 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestClient
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBody
 
 @Component
 class XLogoRestClient : RequesterClient {
 
-    private final val restClient: RestClient = RestClient.create(baseUrl);
+    private final val restClient: RestClient = RestClient.create(baseUrl)
+
+    private final val webClient : WebClient = WebClient.create(baseUrl)
 
     private final val logger: Logger = LoggerFactory.getLogger(XLogoRestClient::class.java)
 
     final override val baseUrl: String
-        get() = "https://coding-challenge-eosin.vercel.app/api"
+        get() = "https://megaverse-store.onrender.com/api"
 
     override val rollbackOnFailure: Boolean
         get() = true
@@ -27,18 +31,18 @@ class XLogoRestClient : RequesterClient {
     override val shouldRetry: Boolean
         get() = true
 
-    override fun buildRequest(method: HttpMethod, uri: String, body: AstralObject?): Any {
+    override suspend fun buildRequest(method: HttpMethod, uri: String, body: AstralObject?): Any {
         try {
             logger.info("Sending the request to Megaverse API service...")
 
-            val request = this.restClient.method(method)
+            val request = this.webClient.method(method)
                 .uri(uri)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
 
-            if (body != null) request.body(body)
+            if (body != null) request.bodyValue(body)
 
-            return request.retrieve().toEntity(String::class.java);
+            return request.retrieve().awaitBody()
         } catch (ex: Exception) {
             if (ex !is HttpClientErrorException && shouldRetry) {
                 logger.info("Retrying the request...")
@@ -50,7 +54,7 @@ class XLogoRestClient : RequesterClient {
                 rollback(uri, body)
             }
 
-            throw ex;
+            throw ex
         }
     }
 
@@ -65,7 +69,7 @@ class XLogoRestClient : RequesterClient {
 
             return request.retrieve().toEntity(String::class.java)
         } catch (ex: Exception) {
-            throw ex;
+            throw ex
         }
     }
 }

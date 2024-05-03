@@ -2,19 +2,12 @@ package com.elijahbus.megaverse.phasetwo
 
 import com.elijahbus.megaverse.extractColor
 import com.elijahbus.megaverse.extractDirection
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonArray
+import kotlinx.coroutines.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpMethod
-import org.springframework.http.ResponseEntity
-import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Future
 
 @Service
 class XLogoService(@Value("\${candidate.id}") private val candidateId: String) {
@@ -24,98 +17,99 @@ class XLogoService(@Value("\${candidate.id}") private val candidateId: String) {
     private final val logger: Logger = LoggerFactory.getLogger(XLogoRestClient::class.java)
 
     val goalMapURL: String =
-        "https://coding-challenge-eosin.vercel.app/api/map/$candidateId/goal"
+        "https://megaverse-store.onrender.com/api/x-logo-data"
 
     val polyanetsURL: String = "/polyanets"
     val soloonsURL: String = "/soloons"
     val comethsURL: String = "/comeths"
 
-    @Async
-    fun runMap(): CompletableFuture<Void>? {
+    suspend fun runMap() {
 
-        val goalMap: Map<String, Any> = this.getGoalMap();
+        val goalMap: Map<String, ArrayList<ArrayList<String>>> = this.getGoalMap()
 
         // goal = array [ [ " " ] ]
-        val placements = (goalMap["goal"] as JsonArray);
+        val placements: ArrayList<ArrayList<String>> = goalMap["goal"] as ArrayList<ArrayList<String>>
 
-        val completableFuture = CompletableFuture.supplyAsync {
-            placements.forEachIndexed rowLoop@{ row, placement ->
-                run {
-                    (placement.jsonArray).forEachIndexed columnLoop@{ column, element ->
-                        run {
-                            logger.info("placing element ' $element ' at row ' $row ' and column ' $column ' ")
+        placements.forEachIndexed rowLoop@{ row, placement ->
+            coroutineScope {
+                placement.forEachIndexed columnLoop@{ column, element ->
+                    run {
+                        logger.info("placing element ' $element ' at row ' $row ' and column ' $column ' ")
 
-                            // We don't want to plot "SPACE" to the map, as this will be automatically passed
-                            if (!isValidAstralElement(element.toString())) return@columnLoop
+                        println("Before validaton check $element")
 
-                            if (element.toString().contains("COMETH")) {
-                                logger.info("Sending a new $element")
+                        // We don't want to plot "SPACE" to the map, as this will be automatically passed
+                        if (!isValidAstralElement(element)) return@columnLoop
+                        println("Past validaton check $element")
+
+                        if (element.contains("COMETH")) {
+                            logger.info("Sending a new $element")
+                            launch {
                                 xlogoRestClient.buildRequest(
                                     HttpMethod.POST,
                                     comethsURL,
-                                    Cometh(row, column, element.toString().extractDirection(), this.candidateId)
+                                    Cometh(row, column, element.extractDirection())
                                 )
                             }
+                        }
 
-                            if (element.toString().contains("SOLOON")) {
-                                logger.info("Sending a new $element")
+                        if (element.contains("SOLOON")) {
+                            logger.info("Sending a new $element")
+                            launch {
                                 xlogoRestClient.buildRequest(
                                     HttpMethod.POST,
                                     soloonsURL,
-                                    Soloon(row, column, element.toString().extractColor(), this.candidateId)
+                                    Soloon(row, column, element.extractColor())
                                 )
                             }
+                        }
 
-                            if (element.toString().contains("POLYANET")) {
-                                logger.info("Sending a new $element")
+                        if (element.contains("POLYANET")) {
+                            logger.info("Sending a new $element")
+                            launch {
                                 xlogoRestClient.buildRequest(
                                     HttpMethod.POST,
                                     polyanetsURL,
-                                    Polyanet(row, column, this.candidateId)
+                                    Polyanet(row, column)
                                 )
                             }
                         }
                     }
                 }
             }
-
-            return@supplyAsync "Finished plotting astral objects on the map"
-        }.thenAcceptAsync { response -> logger.info(response) } // Notify the client on the status that the process has completed
-
-        return completableFuture;
+        }
     }
 
     /**
      * Retrieve the structure of the MAP
      */
-    private fun getGoalMap(): Map<String, Any> {
-        val response = xlogoRestClient.buildRequest(
-            HttpMethod.GET,
-            goalMapURL,
-            null
-        )
+    private suspend fun getGoalMap(): Map<String, ArrayList<ArrayList<String>>> = coroutineScope {
+        val response = async {
+            xlogoRestClient.buildRequest(
+                HttpMethod.GET,
+                goalMapURL,
+                null
+            )
+        }
 
-        val jsonResponse = (response as ResponseEntity<*>).body?.let { Json.parseToJsonElement(it as String) }
-        require(jsonResponse is JsonObject) { "Could not parse JSON response: $jsonResponse!" }
-
-        return jsonResponse;
+        return@coroutineScope response.await() as Map<String, ArrayList<ArrayList<String>>>
     }
 
     private fun isValidAstralElement(element: String): Boolean {
-        val excludedElement = "SPACE";
+        val excludedElement = "SPACE"
 
         val validElements: List<String> = listOf(
-            "\"POLYANET\"",
-            "\"RIGHT_COMETH\"",
-            "\"LEFT_COMETH\"",
-            "\"UP_COMETH\"",
-            "\"DOWN_COMETH\"",
-            "\"WHITE_SOLOON\"",
-            "\"BLUE_SOLOON\"",
-            "\"RED_SOLOON\"",
-            "\"PURPLE_SOLOON\"",
+            "POLYANET",
+            "RIGHT_COMETH",
+            "LEFT_COMETH",
+            "UP_COMETH",
+            "DOWN_COMETH",
+            "WHITE_SOLOON",
+            "BLUE_SOLOON",
+            "RED_SOLOON",
+            "PURPLE_SOLOON",
         )
 
-        return validElements.contains(element) && element != excludedElement;
+        return validElements.contains(element) && element != excludedElement
     }
 }
