@@ -4,14 +4,16 @@ import com.elijahbus.megaverse.common.AstralObject
 import com.elijahbus.megaverse.requester.RequesterClient
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
+import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 
+@Component
 class PolyanetsRestClient : RequesterClient {
 
     private val restClient = RestClient.create(baseUrl)
 
     override val baseUrl: String
-        get() = "https://coding-challenge-eosin.vercel.app/api"
+        get() = "https://megaverse-store.onrender.com/api"
 
     override val rollbackOnFailure: Boolean
         get() = false

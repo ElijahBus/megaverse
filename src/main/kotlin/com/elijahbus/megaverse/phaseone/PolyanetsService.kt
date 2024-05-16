@@ -5,9 +5,10 @@ import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Service
 
 @Service
-class PolyanetsService(@Value("\${candidate.id}") private val candidateId: String) {
-
-    private final val polyanetsRestClient = PolyanetsRestClient()
+class PolyanetsService(
+    private val polyanetsRestClient : PolyanetsRestClient,
+    @Value("\${candidate.id}") private val candidateId: String
+) {
 
     val axis1 = mapOf(
         2 to 2,
