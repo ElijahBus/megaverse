@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class PolyanetsService(
-    private val polyanetsRestClient : PolyanetsRestClient,
+    private val polyanetsRestClient: PolyanetsRestClient,
     @Value("\${candidate.id}") private val candidateId: String
 ) {
 

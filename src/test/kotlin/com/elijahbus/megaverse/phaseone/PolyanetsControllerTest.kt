@@ -1,7 +1,6 @@
 package com.elijahbus.megaverse.phaseone
 
-import io.mockk.coEvery
-import io.mockk.mockk
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -14,15 +13,15 @@ import org.springframework.test.web.reactive.server.WebTestClient
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureWebTestClient
 class PolyanetsControllerTest {
+
     @Autowired
     lateinit var client: WebTestClient
 
-    @Autowired
-    var polyanetsRestClient: PolyanetsRestClient = mockk()
 
     @Test
     fun `should return ok when sending new polyanets`() {
-        
-
+        runBlocking {
+            client.get().uri("/api/polyanets").exchange().expectStatus().isOk
+        }
     }
 }
